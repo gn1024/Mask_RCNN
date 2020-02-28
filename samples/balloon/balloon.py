@@ -27,20 +27,23 @@ Usage: import the module (see Jupyter notebooks for examples), or run from
     python3 balloon.py splash --weights=last --video=<URL or path to file>
 """
 
+import datetime
+import json
 import os
 import sys
-import json
-import datetime
+
 import numpy as np
 import skimage.draw
+
+from mrcnn import model as modellib
+from mrcnn import utils
+from mrcnn.config import Config
 
 # Root directory of the project
 ROOT_DIR = os.path.abspath("../../")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
-from mrcnn.config import Config
-from mrcnn import model as modellib, utils
 
 # Path to trained weights file
 COCO_WEIGHTS_PATH = os.path.join(ROOT_DIR, "mask_rcnn_coco.h5")
@@ -109,7 +112,7 @@ class BalloonDataset(utils.Dataset):
         # }
         # We mostly care about the x and y coordinates of each region
         # Note: In VIA 2.0, regions was changed from a dict to a list.
-        annotations = json.load(open(os.path.join(dataset_dir, "via_region_data.json")))
+        annotations = json.load(open(os.path.join(dataset_dir, "via_export_json.json")))
         annotations = list(annotations.values())  # don't need the dict keys
 
         # The VIA tool saves images in the JSON even if they don't have any
@@ -122,10 +125,10 @@ class BalloonDataset(utils.Dataset):
             # the outline of each object instance. These are stores in the
             # shape_attributes (see json format above)
             # The if condition is needed to support VIA versions 1.x and 2.x.
-            if type(a['regions']) is dict:
+            if isinstance(a['regions'], dict):
                 polygons = [r['shape_attributes'] for r in a['regions'].values()]
             else:
-                polygons = [r['shape_attributes'] for r in a['regions']] 
+                polygons = [r['shape_attributes'] for r in a['regions']]
 
             # load_mask() needs the image size to convert polygons to masks.
             # Unfortunately, VIA doesn't include it in JSON, so we must read
@@ -307,7 +310,7 @@ if __name__ == '__main__':
         assert args.dataset, "Argument --dataset is required for training"
     elif args.command == "splash":
         assert args.image or args.video,\
-               "Provide --image or --video to apply color splash"
+            "Provide --image or --video to apply color splash"
 
     print("Weights: ", args.weights)
     print("Dataset: ", args.dataset)
